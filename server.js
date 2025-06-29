@@ -1,11 +1,11 @@
-// Stremio Device-Aware Add-on - Deployment Ready
 const { addonBuilder } = require("stremio-addon-sdk");
 const express = require("express");
 const NodeCache = require("node-cache");
 
 const app = express();
-const port = process.env.PORT || 10000;
+const port = process.env.PORT || 7000;
 
+// ✅ Fixed manifest with required `catalogs` array
 const manifest = {
     "id": "org.scholar.stremio.deviceaware",
     "version": "1.0.0",
@@ -13,7 +13,19 @@ const manifest = {
     "description": "Provides device-aware filtering and smart provisioning for Stremio streams",
     "resources": ["catalog", "stream"],
     "types": ["movie", "series"],
-    "idPrefixes": ["tt"]
+    "idPrefixes": ["tt"],
+    "catalogs": [
+        {
+            type: "movie",
+            id: "device-aware-catalog",
+            name: "Device Aware Movies"
+        },
+        {
+            type: "series",
+            id: "device-aware-catalog",
+            name: "Device Aware Series"
+        }
+    ]
 };
 
 const builder = new addonBuilder(manifest);
@@ -41,6 +53,11 @@ function filterStreams(streams, deviceProfile) {
         return resolutionCheck && codecCheck;
     });
 }
+
+// Catalog handler (returns empty for now)
+builder.defineCatalogHandler(({ type, id, extra }) => {
+    return Promise.resolve({ metas: [] });
+});
 
 // Stream Handler
 builder.defineStreamHandler(async ({ id, userAgent }) => {
