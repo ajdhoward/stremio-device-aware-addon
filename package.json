@@ -1,0 +1,12 @@
+{
+  "name": "stremio-device-aware-addon",
+  "version": "1.0.0",
+  "description": "Device-aware Stremio add-on for dynamic stream filtering and provisioning",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "stremio-addon-sdk": "^1.0.0",
+    "express": "^4.18.2",
+    "node-cache": "^5.1.2"
+  }
+}
