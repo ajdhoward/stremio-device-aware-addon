@@ -1,11 +1,13 @@
 const { addonBuilder } = require("stremio-addon-sdk");
 const express = require("express");
 const NodeCache = require("node-cache");
+const cors = require("cors"); // ✅ Added for Stremio compatibility
 
 const app = express();
+app.use(cors()); // ✅ Enable CORS for all routes
+
 const port = process.env.PORT || 7000;
 
-// ✅ Fixed manifest with required `catalogs` array
 const manifest = {
     "id": "org.scholar.stremio.deviceaware",
     "version": "1.0.0",
@@ -37,7 +39,7 @@ const deviceCapabilities = {
     "Windows_PC": { "max_resolution": "4K", "preferred_codec": "HEVC" }
 };
 
-// Simulated Torrentio integration
+// Simulated streams for demonstration
 async function fetchStreamsSimulated(id) {
     return [
         { title: "4K_HEVC_Stream", url: "magnet:?xt=urn:btih:example4k", resolution: "4K", codec: "HEVC" },
@@ -45,7 +47,7 @@ async function fetchStreamsSimulated(id) {
     ];
 }
 
-// Filter by device
+// Filters streams based on device profile
 function filterStreams(streams, deviceProfile) {
     return streams.filter(s => {
         const resolutionCheck = (deviceProfile.max_resolution === "4K" || s.resolution !== "4K");
@@ -54,29 +56,38 @@ function filterStreams(streams, deviceProfile) {
     });
 }
 
-// Catalog handler (returns empty for now)
+// Catalog handler (returns empty, placeholder for future real meta)
 builder.defineCatalogHandler(({ type, id, extra }) => {
     return Promise.resolve({ metas: [] });
 });
 
-// Stream Handler
+// Stream handler with device-aware filtering
 builder.defineStreamHandler(async ({ id, userAgent }) => {
     const cacheKey = `${id}-${userAgent}`;
     if (cache.has(cacheKey)) {
         return { streams: cache.get(cacheKey) };
     }
+
     const deviceType = userAgent.includes("Mobile") ? "Android_Phone" : "Windows_PC";
     const deviceProfile = deviceCapabilities[deviceType] || deviceCapabilities["Windows_PC"];
+
     const streams = await fetchStreamsSimulated(id);
     const filteredStreams = filterStreams(streams, deviceProfile);
     cache.set(cacheKey, filteredStreams);
+
     return { streams: filteredStreams };
 });
 
-// Manifest and Routing
-app.get("/manifest.json", (_, res) => res.json(builder.getInterface().manifest));
+// Serve manifest.json
+app.get("/manifest.json", (_, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(builder.getInterface().manifest));
+});
+
+// Serve addon routes
 app.get("/:resource/:type/:id/:extra?.json", (req, res) => {
     builder.getInterface().get(req, res);
 });
 
-app.listen(port, () => console.log(`🚀 Stremio Device-Aware Add-on live on port ${port}`));
+// Start server
+app.listen(port, () => console.log(`🚀 Stremio Device-Aware Add-on is live on port ${port}`));
